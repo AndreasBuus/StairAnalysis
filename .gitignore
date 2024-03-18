@@ -2,5 +2,6 @@
 
 Data_MrKick/*.mat
 data_preprocessed/*.mat
+Subject_offsets/*.mat 
 Andreas_subjects/
 *.asv
