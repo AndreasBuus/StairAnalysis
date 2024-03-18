@@ -4,7 +4,7 @@ Data_MrKick/*.mat
 
 data_preprocessed/*.mat
 
-Subject_offsets/*.mat 
+Subject_offsets/* 
 
 Andreas_subjects/
 
