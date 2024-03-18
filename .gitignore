@@ -1,10 +1,10 @@
 # files to ignore
 
+Subject_offsets/*.mat
+
 Data_MrKick/*.mat
 
 data_preprocessed/*.mat
-
-Subject_offsets/* 
 
 Andreas_subjects/
 
