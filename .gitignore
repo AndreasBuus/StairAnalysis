@@ -1,4 +1,6 @@
 # files to ignore
 
-data_preprocessed/
+Data_MrKick/*
+data_preprocessed/*
+Individual_subject_analysis/
 *.asv

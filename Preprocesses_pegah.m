@@ -2,23 +2,22 @@ clc;
 clear all; 
 close all; 
 
-% REMEMBER !
-% 1. ensure the correct subject name/alias is typed
-% 2. ensure the "folderpath_data" point to your data folderpath 
-
 SubjectName = "Pegah"
-
-% Folders path to data 
-folderpath_data = "C:/Users/BuusA/OneDrive - Aalborg Universitet/10. semester (Kandidat)/data/pegah_stairs/";
-
-% File path to data
-filepath_CTL_part1 = folderpath_data + "pegah_1to50_13feb.mat";
-filepath_CTL_part2 = folderpath_data + "pegah_1to50_test2_13feb001.mat"; 
 
 % Folderpath to main folder 
 main_folderpath_unedited = strrep(fileparts(matlab.desktop.editor.getActiveFilename),'\','/');
 x = strfind(main_folderpath_unedited,'/Stair_Matlab_code'); 
 main_folderpath = main_folderpath_unedited(1:x(end)+17); 
+
+
+% Folders path to data 
+folderpath_data = main_folderpath + "data/";
+
+% File path to data
+filepath_CTL_part1 = folderpath_data + "pegah_1to50_13feb.mat";
+filepath_CTL_part2 = folderpath_data + "pegah_1to50_test2_13feb001.mat"; 
+
+
 
 %% Abbreviation
 fprintf('script: Abbreviation'); 
@@ -195,9 +194,8 @@ fprintf(' ... done \n');
 %% Save Data 
 fprintf('script: Save data'); 
 
-
 if ~exist(main_folderpath, 'dir') == 7
-    newfolder = fullfile(main_folderpath, "data_preprocessed")
+    newfolder = fullfile(main_folderpath, "data_preprocessed");
     mkdir(newfolder); 
 end
 
