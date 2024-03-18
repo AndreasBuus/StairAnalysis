@@ -1,6 +1,6 @@
 # files to ignore
 
-Data_MrKick/*
-data_preprocessed/*
+Data_MrKick/*.mat
+data_preprocessed/*.mat
 Andreas_subjects/
 *.asv
