@@ -1,6 +1,6 @@
 # files to ignore
 
-Subject_offsets/*.mat
+Subject_offsets/
 
 Data_MrKick/*.mat
 
