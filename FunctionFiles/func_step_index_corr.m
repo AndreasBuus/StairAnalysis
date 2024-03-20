@@ -27,6 +27,12 @@ edges_index_total = find(edge(FSR(sweep,offset:end)))+offset; %  Index pos of ch
 
 edges_index_removed = edges_index_total([1:edge_num-1, (edge_num+move_num):end]);
 
+data_length = length(edges_index_removed);
+if data_length < 9 
+    pad_length = 9 - data_length;
+    edges_index_removed = padarray(edges_index_removed', pad_length, 'post');
+end 
+
 step_index = flip(edges_index_removed(1:9));
   
 end
