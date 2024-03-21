@@ -11,7 +11,7 @@ main_folderpath = main_folderpath_unedited(1:x(end)+17);
 
 
 % Folders path to data 
-folderpath_data_part1 = main_folderpath + "/Data_MrKick/" + "pegah_1to50_13feb.mat";
+folderpath_data_part1 = main_folderpath + "/Data_MrKick/" + "pegah_1to50_13fb.mat";
 folderpath_data_part2 = main_folderpath + "/Data_MrKick/" + "pegah_1to50_test2_13feb001.mat";
 
 
@@ -56,11 +56,18 @@ data{CTL,ANG}  = [angle_CTL1; angle_CTL2];  clear angle_CTL1 angle_CTL2;
 data{CTL,FSR}  = [FSR_CTL1; FSR_CTL2];      clear FSR_CTL1 FSR_CTL2; 
 
 % Acquisition Set-Up
-sweep_length = 10;              % Signal length in second
+sweep_length = 9;              % Signal length in second
 Fs = 2000;                      % Samples per second
 dt = 1/Fs;                      % Seconds per sample
 pre_trig = 4;                   % Pre-trigger 
 N = Fs*sweep_length;            % Total number of samples per signal
+
+
+if ~(N == length(data{CTL,SOL}(1,:)))
+    error_message =  "Wrong sweep length";
+    errordlg(error_message , 'Error');
+    error(error_message)
+end
 
 
 % Exclude sweep 
@@ -120,7 +127,7 @@ end
 if ~(exist(filepath, 'file') == 2)
     enable_gui = true; 
 else 
-    prompt = newline + "     Run >Correct FSR position GUI< ?.\n     YES: press >y<. NO, press >n< \n"+ newline;
+    prompt = newline + "\n     Run >Correct FSR position GUI< ?.\n     YES: press >y<. NO, press >n< \n"+ newline;
 
     correctInput = false; 
     while correctInput == false     % Wait for correct user input
@@ -146,7 +153,7 @@ if enable_gui
 
     if ~isempty(offset)
         if exist(filepath, 'file') == 2 
-            prompt = newline + "     Want to overwrite. YES: press >y<. NO, press >n<"+ newline;
+            prompt = newline + "\n     Want to overwrite. YES: press >y<. NO, press >n<"+ newline;
             correctInput = false; 
             while correctInput == false     % Wait for correct user input
                 switch input(prompt, 's')   % Save user input
@@ -192,7 +199,7 @@ correct_fall_edge = true;
 
 % Find falling edge and correct it
 if correct_fall_edge 
-    fprintf('   Finding stand-off / fall-edge by ankel trajectory instead of FSR \n')
+    fprintf('\n     Finding stand-off / fall-edge by ankel trajectory instead of FSR \n')
     for sweep = 1:size(data{CTL, ANG},1)
         y = data{CTL, ANG}(sweep,:); 
         [pks,locs] = findpeaks(y, 'MinPeakProminence',3,'MinPeakDistance',500, 'Annotate','extents'); 
