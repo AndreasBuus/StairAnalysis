@@ -5,13 +5,10 @@ close all;
 SubjectName = "Pegah"
 
 % Folderpath to main folder 
-main_folderpath_unedited = strrep(fileparts(matlab.desktop.editor.getActiveFilename),'\','/');
-x = strfind(main_folderpath_unedited,'/Stair_Matlab_code'); 
-main_folderpath = main_folderpath_unedited(1:x(end)+17); 
-
+main_folderpath = strrep(fileparts(matlab.desktop.editor.getActiveFilename),'\','/');
 
 % Folders path to data 
-folderpath_data_part1 = main_folderpath + "/Data_MrKick/" + "pegah_1to50_13fb.mat";
+folderpath_data_part1 = main_folderpath + "/Data_MrKick/" + "pegah_1to50_13feb.mat";
 folderpath_data_part2 = main_folderpath + "/Data_MrKick/" + "pegah_1to50_test2_13feb001.mat";
 
 
@@ -43,7 +40,7 @@ data    = cell(3,4);
 addpath(main_folderpath +"/FunctionFiles")
 
 %% Load data and Acquisition Set-Up from Mr Kick
-fprintf('script: Load data and Acquisition Set-Up from Mr Kick'); 
+fprintf('Script section: Load data and Acquisition Set-Up from Mr Kick \n'); 
 % Functions used: [load_EMG_v2()]
 
 % load pre-control
@@ -56,7 +53,7 @@ data{CTL,ANG}  = [angle_CTL1; angle_CTL2];  clear angle_CTL1 angle_CTL2;
 data{CTL,FSR}  = [FSR_CTL1; FSR_CTL2];      clear FSR_CTL1 FSR_CTL2; 
 
 % Acquisition Set-Up
-sweep_length = 9;              % Signal length in second
+sweep_length = 10;              % Signal length in second
 Fs = 2000;                      % Samples per second
 dt = 1/Fs;                      % Seconds per sample
 pre_trig = 4;                   % Pre-trigger 
@@ -76,8 +73,7 @@ exclude_CTL2= [];               % excluded control sweeps
 exclude_VER = [];               % excluded horizontal sweeps
 exclude_HOR = [];               % excluded horizontal sweeps
 
-exclude_CTL = [21, 22, 64, 73, 77, 93];               % excluded control sweeps
-fprintf(2,'\n     Files excluded \n')
+fprintf(2,'\n     Files excluded. Check Mr Kick for files to exclude \n')
 fprintf(2,'\n     %s\n', num2str(exclude_CTL));
 
 for proto = Protocol_All
@@ -87,7 +83,7 @@ for proto = Protocol_All
 end
 
 %% Filtrering and detrend (similar to MR. kick)
-fprintf('script: Filtrering and detrend (similar to MR. kick)'); 
+fprintf('Script section: Filtrering and detrend (similar to MR. kick) \n'); 
 
 fc = 40;                            % Cutoff frequency for LowPass filter
 order = 1;                          % Filter order 
@@ -102,7 +98,7 @@ end
 
 
 %% Find correct position for Stand - and Swingphase
-fprintf('script: Find correct position for Stand - and Swingphase'); 
+fprintf('Script section: Find correct position for Stand - and Swingphase \n'); 
 
 step_index = cell(3,1);  % Index for position 
 error_index = cell(3,1);
@@ -164,6 +160,7 @@ if enable_gui
                         correctInput = true; 
                         oversave = false;
                     otherwise
+                       
                         correctInput = false;
                         warning("     Input not accepted")
                 end 
@@ -191,9 +188,8 @@ if ~(exist(filepath, 'file') == 2)
 end 
 
 
-
 %% Manually readjust 
-fprintf('script: Readjust data to Local Peak instead of FSR .  .  .  .  .  '); tic
+fprintf('Script section: Readjust data to Local Peak instead of FSR .  .  .  .  .  '); tic
 
 correct_fall_edge = true; 
 
@@ -257,7 +253,7 @@ end
 
 
 %% Save Data 
-fprintf('script: Save data'); 
+fprintf('Script section: Save data'); 
 
 if ~exist(main_folderpath, 'dir') == 7
     newfolder = fullfile(main_folderpath, "data_preprocessed");

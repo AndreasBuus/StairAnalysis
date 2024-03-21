@@ -5,11 +5,8 @@ function [SOL_raw, TA_raw, angle, FSR, FSR3, Trig, ForceZ] = load_EMG_v2(str_fil
 
 
     if ~(exist(str_filename, 'file') == 2)
-        main_folderpath_unedited = strrep(fileparts(matlab.desktop.editor.getActiveFilename),'\','/');
-        x = strfind(main_folderpath_unedited,'/Stair_Matlab_code'); 
-        main_folderpath = main_folderpath_unedited(1:x(end)+17); 
+        main_folderpath = strrep(fileparts(matlab.desktop.editor.getActiveFilename),'\','/');
         dir(char(main_folderpath + "/Data_MrKick"))
-
 
         error_message =  "Unable to find file or directory " +  str_filename;
         errordlg(error_message , 'Error');
