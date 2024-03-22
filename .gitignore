@@ -9,3 +9,5 @@ data_preprocessed/*.mat
 Andreas_subjects/
 
 *.asv
+
+.gitignore

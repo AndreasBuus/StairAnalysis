@@ -14,7 +14,7 @@ folderpath_data_part2 = main_folderpath + "/Data_MrKick/" + "pegah_1to50_test2_1
 
 
 %% Abbreviation
-fprintf('script: Abbreviation'); 
+fprintf('Script section:: Abbreviation \n'); 
 
 % protocol abbreviation types
 CTL  = 1;  % Control nr 1
@@ -148,6 +148,7 @@ if enable_gui
     pause
 
     if ~isempty(offset)
+        step_index = offset; 
         if exist(filepath, 'file') == 2 
             prompt = newline + "\n     Want to overwrite. YES: press >y<. NO, press >n<"+ newline;
             correctInput = false; 
