@@ -5,9 +5,7 @@ close all;
 %% Load data and define abbreviation
 fprintf('script: Folder .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  '); tic
 
-names = ["Pegah", "Andreas"]; 
-    Pegah = 1; 
-    Andreas = 2; 
+names = ["Pegah", "Nikolas"]; 
 
 % find the current folder path 
 folderpath = strrep(fileparts(matlab.desktop.editor.getActiveFilename),'\','/'); 
@@ -15,6 +13,8 @@ folderpath = strrep(fileparts(matlab.desktop.editor.getActiveFilename),'\','/');
 % Define data path
 addpath(folderpath +"/FunctionFiles")
 folderpath_preprocessed_data = folderpath + "/data_preprocessed/"; 
+folderpath_stepIndex_data = folderpath + "/step_indexs/"; 
+
         
 % Preallocation
 total_data = cell(1,1,numel(names));
@@ -23,6 +23,7 @@ total_step = cell(1,1,numel(names));
 
 % Protocol abbreviation types
 control = 1;    % Control
+CTL = 1; 
 protocol_all = [CTL];
 
 % Sensor abbreviation type
@@ -38,13 +39,14 @@ step = 8;   % Step index
 % Load preproccessed data  
 for sub = 1:length(names)
     load(folderpath_preprocessed_data + names(sub) + "_data.mat");   % example: data{protocol, sensor}(sweep, data number)
-    load(folderpath_preprocessed_data + names(i) + "_step.mat");     % example: step_index{protocol}(sweep, step)
+    load(folderpath_stepIndex_data + names(sub) + "_offset.mat");     % example: step_index{protocol}(sweep, step)
+    % load(folderpath_stepIndex_data + names(sub) + "_step_index.mat");     % example: step_index{protocol}(sweep, step)
    
-    for protocol = proto_all
+    for protocol = protocol_all
         for sensor = [SOL, TA, ANG, FSR]
             data_all{sub,protocol,sensor} = data{protocol,sensor}; 
         end
-        data_all{sub,protocol,step} = step_index{protocol}; 
+        data_all{sub,protocol,step} = offset{protocol}; 
     end    
 end 
 
@@ -199,7 +201,7 @@ order = 1;                          % Filter order
 % Control and Horizontal trials
 for sub = 1:length(names) % subjects
     data = total_data{1,1,sub};  % load data 
-    for proto = proto_all % protocols 
+    for proto = protocol_all % protocols 
         order = 1; row  = 2; 
 
         % Position
@@ -290,7 +292,7 @@ folderpath = "C:/Users/BuusA/OneDrive - Aalborg Universitet/10. semester (Kandid
 filename = "offset.mat";
 
 
-error = zeros(numel(proto_all), numel(names),100); % 3x10x100
+error = zeros(numel(protocol_all), numel(names),100); % 3x10x100
 if readjust 
     for sub = 1:numel(names) % loop through subjects 
 
@@ -298,7 +300,7 @@ if readjust
         if any(strcmp(names(sub), ["Christian", "Soeren"])) 
             protocols = [CTL]; 
         else 
-            protocols = proto_all; 
+            protocols = protocol_all; 
         end
         
         % Check if an already defined offset file exist for subject 
