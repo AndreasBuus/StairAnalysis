@@ -5,7 +5,7 @@ close all;
 %% Load data and define abbreviation
 fprintf('script: Folder .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  '); tic
 
-names = ["Pegah", "Nikolas"]; 
+names = ["Pegah", "Nikolas", "Anne", "Andreas"]; 
 
 % find the current folder path 
 folderpath = strrep(fileparts(matlab.desktop.editor.getActiveFilename),'\','/'); 
@@ -144,7 +144,7 @@ if remove_saturated
         total_data{1,1,sub} = data; 
         total_step{1,1,sub} = step_index;
     end
-    fprintf('\n     done [ %4.2f sec ] \n', toc);
+    fprintf('done [ %4.2f sec ] \n', toc);
 else 
     fprintf('disable \n');
 end 
@@ -290,12 +290,12 @@ else
 end
 
 %% Task 0.1: Show average sweep for single subject
-fprintf('script: TASK 0.2  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  '); tic
+fprintf('script: TASK 0.1  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  '); tic
 
 show_plot = true;       % Disable or enable plot
 subject =  2;            % Obtions: 1:8
 proto = CTL;            % Obtions: CTL, VER, HOR 
-str_sen = ["Position", "Soleus", "Tibialis"];    % Obtions: "Soleus", "Tibialis","Position", "Velocity", "Acceleration"; 
+str_sen = ["Position", "Soleus"];    % Obtions: "Soleus", "Tibialis","Position", "Velocity", "Acceleration"; 
 show_FSR = true; 
 align_bool = true;      % Should the data be aligned with step specified in "Align with specific Stair step"
     alignWithStep = "four_begin"; % Obtions: "second_begin", "four_begin", "six_begin"
@@ -403,7 +403,7 @@ end
 
 %% Task 0.2: Show individual sweep for single subject
 % undersøg for metodisk fejl.
-fprintf('script: TASK 0.3  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  '); tic
+fprintf('script: TASK 0.2  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  '); tic
 
 show_plot = false;       % Disable or enable plot
 subject = 1;            % Obtions: 1:9
@@ -504,283 +504,298 @@ figure('name','control sweep'); % Begin plot
         end 
     end
 else 
-    fprintf('disable');
+    fprintf('disable \n');
 end 
 
 
 %% Define windows
-fprintf('script: TASK 0.3  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  '); tic
+fprintf('script: Define windoes  .  .  .  .  .  .  .  .  .  .  .  .  .  .  '); tic
 
-inc_sub = 1:length(names);
-dep_off = 39; % depended search window beginning after foot contact
-dep_len = 20; % depended search window length 
+inc_sub = 1:length(names); % include all subject
+predict_search = [0, 20];
+depend_search1 = [39 59];
+depend_search2 = [60 80];
 
-% .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .
-for step = [2,4,6]
-    predict_search(step,:) = [0, 20]; 
-    depend_search(step,:) = [predict_search(step,1)+dep_off, predict_search(step,1)+dep_off+dep_len];
-end
-% Preallocation
-predictor_value = cell(size(names)); 
-depended_value = cell(size(names)); 
+% 
+% % Preallocation
+% predictor_value = cell(size(names)); 
+% depended1_value = cell(size(names)); 
+% depended2_value = cell(size(names)); 
 
+% loop through included subjects 
+for sub = inc_sub   
 
-
-for sub = inc_sub   % loop through subjects 
-    % Load data from defined subject defined by loop
+    % Load data from current subject
     data = total_data{1,1,sub};  
     step_index = total_step{1,1,sub};
+
+    for i = [1,2,3]
+        step = steps_tested(i);
+        [rise, fall] = func_find_edge(step); % value for the given step in step_index
         
-    % Find predictor and depended 
-    for k = 1:3                      
-        step = steps_tested(k);
-       
-        [rise, fall] = func_find_edge(step);                    % rise and fall value for the given step
-        falling = []; falling = step_index{CTL}(:,fall);   % fall indexes for all sweeps
-        rising  = []; rising  = step_index{CTL}(:,rise);   % rise indexes for all sweeps  
-        step_sec{sub}(k,:) = (falling(:) - rising(:))*dt;       % duration of each step phase, unit [sec]
-
+        falling = []; rising = [];           % clear values from previous subject
+        falling = step_index{CTL}(:,fall);   % fall indexes for all sweeps
+        rising  = step_index{CTL}(:,rise);   % rise indexes for all sweeps  
+    
         % Re-define window ms to sample
-        predict_search_index = floor(ms2sec(predict_search(step,:))*Fs);  % unit [sample]
-        depend_search_index  = floor(ms2sec(depend_search(step,:))*Fs);   % unit [sample]
+        predict_search_idx = floor(ms2sec(predict_search)*Fs);   % unit [sample]
+        depend_search1_idx = floor(ms2sec(depend_search1)*Fs);   % unit [sample]
+        depend_search2_idx = floor(ms2sec(depend_search2)*Fs);   % unit [sample]
+    
+        for sweep = 1:size(data{CTL,1},1)    
 
-        for sweep = 1:size(data{CTL,1},1)     
-            % Find rise index for the given step and define window 
-            rise_index = step_index{CTL}(sweep,rise);
+            % Find rise idx for the given step and define window 
+            rise_idx = step_index{CTL}(sweep,rise);
            
             % clear values from previous subject
-            predict_search_array = []; depend_search_array  = [];
-
-            predict_search_array = predict_search_index(1)+rise_index : predict_search_index(2)+rise_index; 
-            depend_search_array = depend_search_index(1)+rise_index : depend_search_index(2)+rise_index; 
-          
-
-            % PREDICTOR VALUES:
-            pos = (data{CTL,ANG}((sweep),:)); 
-
-            % The mean of the window span 
-            % predictor_value{sub}(step,sweep) = mean(pos{predict_search_array),2); 
-
-            % The max of the window span
-            % predictor_value{sub}(step,sweep) =  max(ang_data(predict_search_array)); 
-            
-            % The difference from start to end window in velocity
-            predictor_value{sub}(step,sweep) =  (pos(predict_search_array(1)) - pos(predict_search_array(end))) / sec2ms(diff(predict_search(step,:))*dt);
+            predict_search_array = []; depend_search1_array = []; depend_search1_array = [];
     
-            % The difference from start window to smallest value in window in velocity
-            % x = find(min(ang_data(predict_search_array)) == ang_data(predict_search_array)); 
-            % predictor_value{sub}(step,sweep) =  (ang_data(predict_search_array(1)) - min(ang_data(predict_search_array))) / sec2ms(x*dt);
+            predict_search_array = predict_search_idx(1)+rise_idx : predict_search_idx(2)+rise_idx; 
+            depend_search1_array = depend_search1_idx(1)+rise_idx : depend_search1_idx(2)+rise_idx; 
+            depend_search2_array = depend_search2_idx(1)+rise_idx : depend_search2_idx(2)+rise_idx; 
+
+            position = (data{CTL,ANG}(sweep,predict_search_array)); 
+            velocity = (data{CTL,VEL}(sweep,predict_search_array));
             
+            % PREDICTOR VALUES
+            switch "mean"
+                case "mean" % The mean of the window span
+                predict{sub}(i,sweep) = mean(position); 
+                
+                case "max" % The max of the window span
+                predict{sub}(i,sweep) =  max(position);
+       
+                case "startAndEnd" % The difference from start to end window in velocity
+                predict{sub}(i,sweep) =  (position(1) - position(end)) / sec2ms(predict_search_array)*dt;
+            
+                case "startToSmallest" % The difference from start window to smallest value in window in velocity
+                x = find(min(position) == position); 
+                predict{sub}(i,sweep) =  (position(1) - position(x)) / sec2ms(x*dt);
+            end
+
             % DEPENDED VALUES 
             for EMG = [SOL, TA]
-                EMG_data = (data{CTL,EMG}((sweep),:)); 
-            
-                % EMG activity for the whole standphase 
-                step_EMG{sub}(EMG,step,sweep) = mean(EMG_data(rising(sweep) : falling(sweep)));  
+                EMG_data1 = (data{CTL,EMG}(sweep,depend_search1_array)); 
+                EMG_data2 = (data{CTL,EMG}(sweep,depend_search2_array)); 
 
                 % Mean EMG activty during the window span
-                depended_value{sub}(EMG, step, sweep) =  mean(EMG_data(depend_search_array));
+                depend1{sub}(EMG, i, sweep) =  mean(EMG_data1);
+                depend2{sub}(EMG, i, sweep) =  mean(EMG_data2);
             end
-        end %sweep
-    end %step 
-end % sub
+        end
+    end
+end 
+fprintf('done [ %4.2f sec ] \n', toc);
 
 
 %% Task 1: FC correlation with EMG (Seperate steps, Single subject) 
 
 show_plot = true;           % plot the following figures for this task
-subject = 2;                % subject to analyse
- % Xlim in plotting
-before = 500;
-after = 500;
+subject = 3;                % subject to analyse
+
+% Xlim in plotting
+before = 200;
+after = 200;
 xlimits = [-before after];
 
 if show_plot
-    % Load data for plot, defined by >> subject <<
-    data = total_data{1,1,subject};  
-    step_index = total_step{1,1,subject};
+% Load data defined by >> subject <<
+data = total_data{1,1,subject};  
+step_index = total_step{1,1,subject};
+
+% Plot figure
+fig = findobj('Name', 'Pre-baseline');
+if ~isempty(fig), close(fig); end  % close figure if allready exist
+figSize = [50 50 floor(width/2) floor(height/2)]; % where to plt and size
+figure('Name', 'Pre-baseline','Position', figSize); % begin plot 
+sgtitle("Subject: " + subject + ". [n = " + size(data{CTL,1},1) + "]."); 
+
+% Patch properties 
+y_patch = [-1000 -1000 1000 1000];
+patchcolor_pre = [251,244,199]/255; 
+patchcolor_SLR = "blue"; %[251,244,199]/255;
+patchcolor_MLR = "red";  %[251,244,199]/255; 
+
+FaceAlpha = 1; 
+FaceAlpha_dep = 0.1;
+EdgeColor_pre = "none"; %[37,137,70]/255;
+EdgeColor_dep = "none"; %[37,137,70]/255;
+
+for k = 1:3 % loop through steps       
+    x_patch_pre = [predict_search(1)  predict_search(2)    predict_search(2)    predict_search(1)];
+    x_patch_SLR = [depend_search1(1)  depend_search1(2)    depend_search1(2)    depend_search1(1)];
+    x_patch_MLR = [depend_search2(1)  depend_search2(2)    depend_search2(2)    depend_search2(1)];
+
+    data_plot = cell(3,7); 
+    [data_plot{CTL,:}] = func_align(step_index{CTL}, data{CTL,[1:4,6:7]}, 'sec_before', ms2sec(before), 'sec_after', ms2sec(after), 'alignStep', align_with_obtions(k));
     
-    % Plot figure
-    fig = findobj('Name', 'Pre-baseline');
-    if ~isempty(fig), close(fig); end
-    figSize = [50 50 floor(width/2) floor(height/2)]; % where to plt and size
-    figure('Name', 'Pre-baseline','Position', figSize); % begin plot 
-    sgtitle("Subject: " + subject + ". [n = " + size(data{CTL,1},1) + "]."); 
-
-    % Patch properties 
-    y_pat = [-1000 -1000 1000 1000];
-    patchcolor_pre = [251,244,199]/255; 
-    patchcolor_dep = "blue"; %[251,244,199]/255;
-    patchcolor_dep_MLR = "red"; %[251,244,199]/255; 
-
-    FaceAlpha = 1; 
-    FaceAlpha_dep = 0.1;
-    EdgeColor_pre = "none";%[37,137,70]/255;
-    EdgeColor_dep = "none";% [37,137,70]/255;
-    
-    for k = 1:3 % loop through steps       
-        x_pat_pre = [predict_search(steps_tested(k),1) predict_search(steps_tested(k),2) predict_search(steps_tested(k),2) predict_search(steps_tested(k),1)];
-        x_pat_dep = [depend_search(steps_tested(k),1) depend_search(steps_tested(k),2) depend_search(steps_tested(k),2) depend_search(steps_tested(k),1)];
-        x_pat_dep_MLR = [depend_search(steps_tested(k),1)+21 depend_search(steps_tested(k),2)+21 depend_search(steps_tested(k),2)+21 depend_search(steps_tested(k),1)+21];
-
-        data_plot = cell(3,7); 
-        [data_plot{CTL,:}] = func_align(step_index{CTL}, data{CTL,[1:4,6:7]}, 'sec_before', ms2sec(before), 'sec_after', ms2sec(after), 'alignStep', align_with_obtions(k));
-        
     % Predictor 
-        sensor_type = [ANG, VEL]; % Ankle and velocity
-        for i = 1:numel(sensor_type)
-            subplot(4,3,0+k + (i-1)*3); hold on; % Ankel 
-            % Formalia setup
-            ylabel(labels_ms(sensor_type(i)));
-            if sensor_type(i) == ANG; title("Step " + k*2); end
-            %subtitle("["+ predict_search(steps_tested(k),1) + " : "+predict_search(steps_tested(k),2)+" ms]")
-            xlim(xlimits)
+    sensor_type = [ANG, VEL]; % Ankle and velocity
+    for i = 1:numel(sensor_type)
+        subplot(4,3,0+k + (i-1)*3); hold on; % Ankel 
+        
+       % Formalia setup
+        ylabel(labels_ms(sensor_type(i)));
 
-            % Plt data 
-            y = mean(data_plot{CTL,sensor_type(i)},1); 
-            std_dev = std(data_plot{CTL,sensor_type(i)});
-            curve1 = y + std_dev;
-            curve2 = y - std_dev;
-            x_axis = data_plot{CTL,time};
-            x_axis = sec2ms(x_axis);
-            x2 = [x_axis, fliplr(x_axis)];
-            inBetween = [curve1, fliplr(curve2)];   
-            fill(x2, inBetween, [0.75, 0.75, 0.75], 'LineStyle','none'); 
-            plot(x_axis, y, 'LineWidth', 1, "color","black"); 
-            YL = get(gca, 'YLim'); ylim([YL(1) YL(2)]);
-            patch(x_pat_pre,y_pat,patchcolor_pre,'FaceAlpha',FaceAlpha, 'EdgeColor', EdgeColor_pre)
-            set(gca, 'Layer', 'top')
-            fill(x2, inBetween, [0.75, 0.75, 0.75], 'LineStyle','none'); 
-            plot(x_axis, y, 'LineWidth', 1, "color","black"); 
-        end 
-    % Depended
-        sensor_type = [SOL, TA]; % Soleus and Tibialis
-        for i = 1:numel(sensor_type)
-            subplot(4,3, 6+k+(i-1)*3); hold on; 
-            % Formalia setup
-            ylabel(labels_ms(sensor_type(i))); 
-            %subtitle(labels(sensor_type(i)) +" "+ depend_search(steps_tested(k),1) + " : "+depend_search(steps_tested(k),2)+"ms")            
-            xlim(xlimits)
-    
-            % Plt data 
-            y = mean(data_plot{CTL,sensor_type(i)},1); 
-            std_dev = std(data_plot{CTL,sensor_type(i)});
-            curve1 = y + std_dev;
-            curve2 = y - std_dev;
-            x_axis = data_plot{CTL,time};
-            x_axis = sec2ms(x_axis);
-            x2 = [x_axis, fliplr(x_axis)];
-            inBetween = [curve1, fliplr(curve2)];   
-            fill(x2, inBetween, [0.75, 0.75, 0.75], 'LineStyle','none'); 
-            plot(x_axis, y, 'LineWidth', 1, "color","black"); 
-            YL = get(gca, 'YLim'); ylim([YL(1) YL(2)]);
-            patch(x_pat_dep,y_pat,patchcolor_dep,'FaceAlpha',FaceAlpha_dep, 'EdgeColor', EdgeColor_dep)
-            patch(x_pat_dep_MLR,y_pat,patchcolor_dep_MLR,'FaceAlpha',FaceAlpha_dep, 'EdgeColor', EdgeColor_dep)
+        % title
+        if sensor_type(i) == ANG; title("Step " + k*2); end
+        subtitle("["+ predict_search(1) + " : "+predict_search(2)+" ms]")
+        xlim(xlimits)
 
-            set(gca, 'Layer', 'top')
-            fill(x2, inBetween, [0.75, 0.75, 0.75], 'LineStyle','none'); 
-            plot(x_axis, y, 'LineWidth', 1, "color","black"); 
-        end   
+        % find STD
+        y = mean(data_plot{CTL,sensor_type(i)},1); 
+        std_dev = std(data_plot{CTL,sensor_type(i)});
+        curve1 = y + std_dev;
+        curve2 = y - std_dev;
+        x_axis = data_plot{CTL,time};
+        x_axis = sec2ms(x_axis);
+        x2 = [x_axis, fliplr(x_axis)];
+        inBetween = [curve1, fliplr(curve2)];   
+        fill(x2, inBetween, [0.75, 0.75, 0.75], 'LineStyle','none'); 
+        plot(x_axis, y, 'LineWidth', 1, "color","black"); 
+
+        % plot patch and line
+        YL = get(gca, 'YLim'); % find ylim 
+        ylim([YL(1) YL(2)]);
+        patch(x_patch_pre, y_patch, patchcolor_pre, 'FaceAlpha',FaceAlpha, 'EdgeColor', EdgeColor_pre)
+        set(gca, 'Layer', 'top')
+        fill(x2, inBetween, [0.75, 0.75, 0.75], 'LineStyle','none'); 
+        plot(x_axis, y, 'LineWidth', 1, "color","black"); 
     end 
 
-
-    % begin plot
-    fig = findobj('Name', 'Pre-baseline2');
-    if ~isempty(fig), close(fig); end
-    screensize = get(0,'ScreenSize');
-    figSize = [100 100 floor(width/1.5) floor(height/2)]; % where to plt and size
-    figure('Position',figSize,'Name', 'Pre-baseline2'); 
-
-    marksColor = "blue";
-    marker = ["*",".","x"];    
-    sgtitle("Single subject [sub="+ subject +"]. Weighted: "+weighting_data)
-
-    sensory_type = [SOL, TA]; 
-    for i = 1:numel(sensory_type)
-        depended = []; predictor = [];  
-        for k = 1:3   
-            subplot(2,5,k+(i-1)*5 ); hold on
-                if k == 1; ylabel(labels(sensory_type(i))); end
-                de = []; de = (squeeze(depended_value{subject}(sensory_type(i), steps_tested(k),:))); 
-                pr = []; pr = (squeeze(predictor_value{subject}(steps_tested(k),:)));
-                
-
-                mdl = fitlm(pr, de);
-                b = table2array(mdl.Coefficients(1,1)); 
-                a = table2array(mdl.Coefficients(2,1)); 
-                p_value = round(table2array(mdl.Coefficients(2,4)), 3);
-                r2 = round(mdl.Rsquared.Adjusted, 3);
-                linearReg = @(x) x*a + b;     
-                plot(pr, de, marker(k), "color", marksColor)          
-                plot(pr, linearReg(pr), "color", "black")
-                   subtitle(['P-value: {\color{gray}' num2str(p_value) '}. R^2: {\color{gray}' num2str(r2) '}'])
-                if p_value < 0.05
-                    subtitle(['P-value: {\color{black} ' num2str(p_value) '}. R^2' num2str(r2)])
-                else 
-                    subtitle(['P-value: {\color{red} ' num2str(p_value) '}. R^2' num2str(r2)])
-                end
-                title("Step " + steps_tested(k))
-                xlabel("Avg. deg/ms ")
-
-            subplot(2,5,4+5*(i-1):5+5*(i-1)); hold on
-                depended(k,:) = (squeeze(depended_value{subject}(sensory_type(i), steps_tested(k),:))); 
-                predictor(k,:) = (squeeze(predictor_value{subject}(steps_tested(k),:)));
-                plot(predictor(k,:), depended(k,:), marker(k), "color", marksColor)
-        end
+    % Depended
+    sensor_type = [SOL, TA]; % Soleus and Tibialis
+    for i = 1:numel(sensor_type)
+        subplot(4,3, 6+k+(i-1)*3); hold on; 
         
-        % Linear regression 
-        depended_all_step = [depended(1,:) depended(2,:) depended(3,:)];
-        predictor_all_step = [predictor(1,:) predictor(2,:) predictor(3,:)];
-        mdl = fitlm(predictor_all_step, depended_all_step);  
+        % Formalia setup
+        ylabel(labels_ms(sensor_type(i))); 
+        %subtitle(depend_search1(1) + " : "+depend_search1(2)+"ms")            
+        xlim(xlimits)
+
+        % find STD
+        y = mean(data_plot{CTL,sensor_type(i)},1); 
+        std_dev = std(data_plot{CTL,sensor_type(i)});
+        curve1 = y + std_dev;
+        curve2 = y - std_dev;
+        x_axis = data_plot{CTL,time};
+        x_axis = sec2ms(x_axis);
+        x2 = [x_axis, fliplr(x_axis)];
+        inBetween = [curve1, fliplr(curve2)];   
+        fill(x2, inBetween, [0.75, 0.75, 0.75], 'LineStyle','none'); 
+        plot(x_axis, y, 'LineWidth', 1, "color","black"); 
+
+        % plot patch and data
+        YL = get(gca, 'YLim'); 
+        ylim([YL(1) YL(2)]);
+        patch(x_patch_SLR, y_patch, patchcolor_SLR, 'FaceAlpha',FaceAlpha_dep, 'EdgeColor', EdgeColor_dep)
+        patch(x_patch_MLR, y_patch, patchcolor_MLR, 'FaceAlpha',FaceAlpha_dep, 'EdgeColor', EdgeColor_dep)
+        set(gca, 'Layer', 'top')
+        fill(x2, inBetween, [0.75, 0.75, 0.75], 'LineStyle','none'); 
+        plot(x_axis, y, 'LineWidth', 1, "color","black"); 
+    end   
+end 
+
+
+% begin plot
+fig = findobj('Name', 'Pre-baseline2');
+if ~isempty(fig), close(fig); end
+screensize = get(0,'ScreenSize');
+figSize = [100 100 floor(width/1.5) floor(height/2)]; % where to plt and size
+figure('Position',figSize,'Name', 'Pre-baseline2'); 
+
+marksColor = "blue";
+marker = ["*",".","x"];    
+sgtitle("Single subject [sub="+ subject +"]. Weighted: "+weighting_data)
+
+for emg = [SOL, TA]
+    depended = []; predictor = [];  
+    for step = 1:3   
+        
+        subplot(2,5,step+(emg-1)*5 ); hold on
+        if step == 1; ylabel(labels(emg)); end
+
+        de = []; pr = []; 
+        de = squeeze(depend1{subject}(emg, step,:)); 
+        pr = squeeze(predict{subject}(step,:));
+
+        % plot regression
+        mdl = fitlm(pr, de);
         b = table2array(mdl.Coefficients(1,1)); 
-        a = table2array(mdl.Coefficients(2,1));
-        p_value =  table2array(mdl.Coefficients(2,4)); 
-        r2 = round(mdl.Rsquared.Adjusted, 3); 
-        linearReg = @(x) x*a + b; 
-        plot(predictor_all_step, linearReg(predictor_all_step), "color", "black")
-
-
-        % Levene's test and anova
-        depended_all_step = [depended(1,:)', depended(2,:)', depended(3,:)'];
-        predictor_all_step = [predictor(1,:)', predictor(2,:)', predictor(3,:)'];
-    
-        [p_levene_de] = vartestn(depended_all_step,'TestType','LeveneAbsolute','Display', 'off'); 
-        [p_anova_de] = anova1(depended_all_step, [], 'off');
-        [p_levene_pr] = vartestn(predictor_all_step,'TestType','LeveneAbsolute','Display', 'off'); 
-        [p_anova_pr] = anova1(predictor_all_step, [], 'off');
-            title([' Depend: Levene: {\color{gray}' num2str(round(p_levene_de,3)) '.} Anova: {\color{gray}' num2str(round(p_anova_de,3)) '.}' newline 'Predict:  Levene: {\color{gray}' num2str(round(p_levene_pr,3)) '.} Anova: {\color{gray}' num2str(round(p_anova_pr,3)) '.}'])
-       
-        
-        % Plt formalia 
-        legend(["Data: Step 2", "Data: Step 4", "Data: Step 6","Fit"])
-        subtitle(['P-value: {\color{gray} ' num2str(p_value) '}. R^2: {\color{gray}' num2str(r2) ' }'])
-
+        a = table2array(mdl.Coefficients(2,1)); 
+        p_value = round(table2array(mdl.Coefficients(2,4)), 3);
+        r2 = round(mdl.Rsquared.Adjusted, 3);
+        linearReg = @(x) x*a + b;     
+        plot(pr, de, marker(step), "color", marksColor)          
+        plot(pr, linearReg(pr), "color", "black")
+           subtitle(['P-value: {\color{gray}' num2str(p_value) '}. R^2: {\color{gray}' num2str(r2) '}'])
         if p_value < 0.05
             subtitle(['P-value: {\color{black} ' num2str(p_value) '}. R^2' num2str(r2)])
         else 
             subtitle(['P-value: {\color{red} ' num2str(p_value) '}. R^2' num2str(r2)])
         end
-    end 
+        title("Step " + steps_tested(k))
+        xlabel("Avg. deg/ms ")
 
-    % Set y-limits and x-limits on all subplots 
-    ax = findobj(gcf, 'type', 'axes');
-    ylims = get(ax, 'YLim'); 
-    xlims = get(ax, 'XLim'); 
-    [~, idx_y_ta]  = max(cellfun(@(x) diff(x), ylims(1:4)));
-    [~, idx_y_sol] = max(cellfun(@(x) diff(x), ylims(5:8)));
-    [~, idx_x_ta]  = max(cellfun(@(x) diff(x), xlims(1:4)));
-    [~, idx_x_sol] = max(cellfun(@(x) diff(x), xlims(5:8)));
-    idx_y_sol = idx_y_sol+4; 
-    idx_x_sol = idx_x_sol+4; 
-    for i = 1:numel(ax)
-        if any(i == 1:4)
-            set(ax(i), 'YLim', ylims{idx_y_ta})
-            set(ax(i), 'XLim', xlims{idx_x_ta})
-        elseif any(i == 5:8)  
-            set(ax(i), 'YLim', ylims{idx_y_sol})
-            set(ax(i), 'XLim', xlims{idx_x_sol})
-        end
+        % plot in the same window 
+        subplot(2,5,4+5*(emg-1):5+5*(emg-1)); hold on
+        plot(pr, de, marker(step), "color", marksColor)
     end
+    
+    % Linear regression overall 
+    depended_all_step_array = reshape(squeeze(depend1{subject}(emg, :,:)),1,[]);
+    predictor_all_step_array = reshape(squeeze(predict{subject}(:,:)),1,[]);
+
+    mdl = fitlm(predictor_all_step_array, depended_all_step_array);  
+
+    b = table2array(mdl.Coefficients(1,1)); 
+    a = table2array(mdl.Coefficients(2,1));
+    p_value =  table2array(mdl.Coefficients(2,4)); 
+    r2 = round(mdl.Rsquared.Adjusted, 3); 
+    linearReg = @(x) x*a + b; 
+    plot(predictor_all_step_array, linearReg(predictor_all_step_array), "color", "black")
+
+
+    % Levene's test and anova
+    depended_all_step_matrix = squeeze(depend1{subject}(emg, :,:))';
+    predictor_all_step_matrix = squeeze(predict{subject}(:,:))';
+
+    [p_levene_de] = vartestn(depended_all_step_matrix,'TestType','LeveneAbsolute','Display', 'off'); 
+    [p_anova_de] = anova1(depended_all_step_matrix, [], 'off');
+    [p_levene_pr] = vartestn(predictor_all_step_matrix,'TestType','LeveneAbsolute','Display', 'off'); 
+    [p_anova_pr] = anova1(predictor_all_step_matrix, [], 'off');
+    title([' Depend: Levene: {\color{gray}' num2str(round(p_levene_de,3)) '.} Anova: {\color{gray}' num2str(round(p_anova_de,3)) '.}' newline 'Predict:  Levene: {\color{gray}' num2str(round(p_levene_pr,3)) '.} Anova: {\color{gray}' num2str(round(p_anova_pr,3)) '.}'])
+    
+    % Plt formalia 
+    legend(["Data: Step 2", "Data: Step 4", "Data: Step 6","Fit"])
+    subtitle(['P-value: {\color{gray} ' num2str(p_value) '}. R^2: {\color{gray}' num2str(r2) ' }'])
+
+    if p_value < 0.05
+        subtitle(['P-value: {\color{black} ' num2str(p_value) '}. R^2' num2str(r2)])
+    else 
+        subtitle(['P-value: {\color{red} ' num2str(p_value) '}. R^2' num2str(r2)])
+    end
+end 
+
+% Set y-limits and x-limits on all subplots 
+ax = findobj(gcf, 'type', 'axes');
+ylims = get(ax, 'YLim'); 
+xlims = get(ax, 'XLim'); 
+[~, idx_y_ta]  = max(cellfun(@(x) diff(x), ylims(1:4)));
+[~, idx_y_sol] = max(cellfun(@(x) diff(x), ylims(5:8)));
+[~, idx_x_ta]  = max(cellfun(@(x) diff(x), xlims(1:4)));
+[~, idx_x_sol] = max(cellfun(@(x) diff(x), xlims(5:8)));
+idx_y_sol = idx_y_sol+4; 
+idx_x_sol = idx_x_sol+4; 
+for i = 1:numel(ax)
+    if any(i == 1:4)
+        set(ax(i), 'YLim', ylims{idx_y_ta})
+        set(ax(i), 'XLim', xlims{idx_x_ta})
+    elseif any(i == 5:8)  
+        set(ax(i), 'YLim', ylims{idx_y_sol})
+        set(ax(i), 'XLim', xlims{idx_x_sol})
+    end
+end
 end 
 
 
@@ -805,11 +820,12 @@ if show_plot
     for sub = inc_sub
         for step = 1:3 
             for EMG = [SOL,TA]
-                data_reg.dep_steps{EMG,step} = [data_reg.dep_steps{EMG,step}, nonzeros(squeeze(depended_value{sub}(EMG, steps_tested(step),:)))' ]; 
-                data_reg.dep{EMG} = [data_reg.dep{EMG}, nonzeros(squeeze(depended_value{sub}(EMG, steps_tested(step),:)))' ];
+                data_reg.dep_steps{EMG,step} = [data_reg.dep_steps{EMG,step}, nonzeros(squeeze(depend1{sub}(EMG, step,:)))' ]; 
+                data_reg.dep{EMG} = [data_reg.dep{EMG}, nonzeros(squeeze(depend1{sub}(EMG, step,:)))' ];
+                
             end
-            data_reg.pre = [data_reg.pre,  nonzeros(squeeze(predictor_value{sub}(steps_tested(step),:)))'];
-            data_reg.pre_steps{step} = [data_reg.pre_steps{step}, nonzeros(squeeze(predictor_value{sub}(steps_tested(step),:)))'];
+            data_reg.pre = [data_reg.pre,  nonzeros(squeeze(predict{sub}(step,:)))'];
+            data_reg.pre_steps{step} = [data_reg.pre_steps{step}, nonzeros(squeeze(predict{sub}(step,:)))'];
         end 
     end 
 
@@ -826,8 +842,8 @@ if show_plot
         for sensory_type = [SOL,TA] % muscle type
             depended = []; predictor = [];  
             for k = 1:3 % loop steps 
-                depended(k,:) = nonzeros(squeeze(depended_value{sub}(sensory_type, steps_tested(k),:))); 
-                predictor(k,:) = nonzeros(squeeze(predictor_value{sub}(steps_tested(k),:)));
+                depended(k,:) = nonzeros(squeeze(depend1{sub}(sensory_type, k,:))); 
+                predictor(k,:) = nonzeros(squeeze(predict{sub}(k,:)));
                 
                 % Remember p-value and slope for later plot
                 mdl = fitlm(predictor(k,:), depended(k,:));  
@@ -929,10 +945,10 @@ if pltShow
     if exist("reg_data")
         figSize = [300 250 width/1.4 200]; % where to plt and size
 
-        % Check if a figure with the name 'TASK3' is open
+        % Check if a figure with the name 'slopes' is open
         fig = findobj('Name', 'slopes');
-        % If a figure is found, close it
-        if ~isempty(fig), close(fig); end
+        if ~isempty(fig), close(fig); end % If a figure is found, close it
+
 
         figure('name','slopes','Position', figSize); % begin plot 
         hold on 
@@ -979,7 +995,7 @@ if pltShow
         max_value = max(cellfun(@max, ylims));
         min_value = min(cellfun(@min, ylims));
         for i = 1:numel(ax)
-            set(ax(i), 'YLim', ([-2 6]))%([min_value max_value]))
+            set(ax(i), 'YLim', ([min_value max_value]))%([min_value max_value]))
         end 
     else 
         msg = "\n     Need to run 'Task 1.2' before to enable this section to plot \n"; 
@@ -996,10 +1012,10 @@ if pltShow
     disp("Shapiro-Wilk normality test, p-value: " + p_Shapiro_Wilk + " (normality if p<0.05)")
 
     disp("One-sample right tail t-test,  p_value: ")
-    [H_ttest, p_ttest] = ttest(slope_data(:,1), 0, 'Tail', 'right')
-    [H_ttest, p_ttest] = ttest(slope_data(:,2), 0, 'Tail', 'right')
-    [H_ttest, p_ttest] = ttest(slope_data(:,3), 0, 'Tail', 'right')
-    [H_ttest, p_ttest] = ttest(slope_data(:,4), 0, 'Tail', 'right')
+    [~, p_ttest] = ttest(slope_data(:,1), 0, 'Tail', 'right')
+    [~, p_ttest] = ttest(slope_data(:,2), 0, 'Tail', 'right')
+    [~, p_ttest] = ttest(slope_data(:,3), 0, 'Tail', 'right')
+    [~, p_ttest] = ttest(slope_data(:,4), 0, 'Tail', 'right')
 
     fprintf('done [ %4.2f sec ] \n', toc);
 else
